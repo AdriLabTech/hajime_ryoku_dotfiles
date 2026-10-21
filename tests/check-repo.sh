@@ -17,8 +17,8 @@ if grep -nE "/home/[a-z]|labs\.lownoise|@gmail\.com|adrian|Adrián" $files 2>/de
 # secretos tipicos
 if grep -nEi "(api[_-]?key|secret|token|passwd|password)\s*[=:]\s*['\"]?[A-Za-z0-9_\-]{12,}|-----BEGIN [A-Z ]*PRIVATE KEY|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}" $files 2>/dev/null \
      | grep -v "^tests/check-repo.sh"; then bad "posible secreto"; fi
-# imagenes: el logo de Arch no se distribuye
-if printf '%s\n' $files | grep -Ei '\.(png|gif|svg|jpe?g|webp|raw)$'; then bad "hay imagenes en el repo"; fi
+# imagenes: solo las capturas de docs/; el logo de Arch no se distribuye
+if printf '%s\n' $files | grep -v '^docs/' | grep -Ei '\.(png|gif|svg|jpe?g|webp|raw)$'; then bad "hay imagenes fuera de docs/"; fi
 
 [ "$fail" = 0 ] && echo "repo limpio"
 exit "$fail"
