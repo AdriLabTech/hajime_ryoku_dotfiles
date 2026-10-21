@@ -1,0 +1,221 @@
+{
+  "schema": 1,
+  "slug": "hajime",
+  "name": "Hajime",
+  "author": "Hajime",
+  "createdWith": "0.75.3-beta.20",
+  "color": {
+    "mode": "wallpaper",
+    "themeApps": true
+  },
+  "assets": {
+    "wallpaper": "wall.png",
+    "cursor": "Bibata-Modern-Amber"
+  },
+  "look": {
+    "hypr": {
+      "appearance": {
+        "activeBorder": "#FF7A2F",
+        "activeOpacity": 1,
+        "animatedBorder": false,
+        "animations": true,
+        "blurBrightness": 1,
+        "blurContrast": 0.8916,
+        "blurEnabled": false,
+        "blurIgnoreOpacity": true,
+        "blurNewOptimizations": true,
+        "blurNoise": 0.01,
+        "blurPasses": 1,
+        "blurPopups": false,
+        "blurSize": 4,
+        "blurSpecial": false,
+        "blurVibrancy": 0.17,
+        "blurVibrancyDarkness": 0,
+        "blurXray": false,
+        "borderAngleSpeed": 3,
+        "borderFollowsPalette": false,
+        "borderPartOfWindow": true,
+        "borderSize": 2,
+        "dimAround": 0.4,
+        "dimInactive": false,
+        "dimModal": true,
+        "dimSpecial": 0.2,
+        "dimStrength": 0.5,
+        "extendBorderGrab": 15,
+        "fullscreenOpacity": 1,
+        "gapsIn": 8,
+        "gapsOut": 8,
+        "gapsWorkspaces": 0,
+        "glowColor": "#ee33cc",
+        "glowEnabled": false,
+        "glowRange": 10,
+        "hoverIconOnBorder": true,
+        "inactiveBorder": "#1F3A40",
+        "inactiveOpacity": 0.94,
+        "layout": "scrolling",
+        "noFocusFallback": false,
+        "resizeCorner": 0,
+        "resizeOnBorder": true,
+        "rounding": 4,
+        "roundingPower": 4,
+        "shadowColor": "#000000",
+        "shadowEnabled": false,
+        "shadowPower": 4,
+        "shadowRange": 45,
+        "shadowScale": 1,
+        "shadowSharp": false,
+        "snapEnabled": false,
+        "windowStyle": "pop",
+        "wobblyWindows": false
+      },
+      "anim": {
+        "curves": [
+          {
+            "name": "snap",
+            "x0": 0.25,
+            "x1": 0.25,
+            "y0": 0.1,
+            "y1": 1
+          },
+          {
+            "name": "ryokuWobble",
+            "x0": 0.45,
+            "x1": 0.25,
+            "y0": 0,
+            "y1": 1
+          }
+        ],
+        "items": []
+      },
+      "cursor": {
+        "theme": "Bibata-Modern-Amber",
+        "size": 27,
+        "hideOnKeyPress": false,
+        "inactiveTimeout": 0
+      },
+      "plugins": {
+        "hyprscrolling": {
+          "columnWidth": 0.5,
+          "followFocus": true
+        },
+        "keysounds": {
+          "enabled": false,
+          "profile": "cherry-mx-black",
+          "release": true,
+          "volume": 0.5
+        }
+      }
+    },
+    "shell": {
+      "dock": {
+        "autohide": true,
+        "edge": "bottom",
+        "enabled": true,
+        "frost": true,
+        "labels": false,
+        "magnify": true,
+        "media": false,
+        "shadow": false,
+        "pinned": [
+          "kitty",
+          "firefox",
+          "org.gnome.Nautilus"
+        ]
+      },
+      "frameEnabled": true,
+      "frameCorner": 12,
+      "frameThickness": 2,
+      "frameOpacity": 1,
+      "barStyle": "qsbar",
+      "qsbar": {
+        "barShellStyle": "islands",
+        "barPosition": "top",
+        "barGapTop": 8,
+        "barGapLeft": 16,
+        "barGapRight": 16,
+        "barCornerRadius": 14,
+        "barFrostEnabled": true,
+        "barShadowEnabled": false,
+        "barBorderEnabled": true,
+        "launcherLogoMode": "text",
+        "workspaceStyle": "aurora",
+        "workspaceMode": "5",
+        "barScale": 1.05,
+        "layout": {
+          "version": 1,
+          "left": [
+            "launcher",
+            "workspaces"
+          ],
+          "center": [
+            "clock"
+          ],
+          "right": [
+            "media",
+            "network",
+            "volume",
+            "bluetooth",
+            "battery",
+            "quick",
+            "power"
+          ]
+        },
+        "widgets": {
+          "status": false,
+          "memory": false,
+          "cpu": false,
+          "gpu": false,
+          "storage": false,
+          "cpuTemperature": false,
+          "layout": false,
+          "brightness": false,
+          "claude": false,
+          "weather": true,
+          "volume": true,
+          "network": true,
+          "media": true,
+          "mpris": true,
+          "quick": true,
+          "power": true,
+          "bluetooth": true,
+          "battery": true
+        }
+      }
+    },
+    "launcher": {
+      "radius": 8,
+      "variant": "main"
+    },
+    "visualizer": {
+      "active": 0,
+      "adaptive": true,
+      "angle": 0,
+      "bars": 64,
+      "bloom": 0.6,
+      "color": "",
+      "color2": "",
+      "enabled": false,
+      "extras": [],
+      "fps": 30,
+      "gain": 1,
+      "gradient": false,
+      "grow": "up",
+      "h": 0.42,
+      "idleWave": true,
+      "mirror": false,
+      "peaks": false,
+      "reflection": 0.1,
+      "segments": 10,
+      "shape": "rounded",
+      "smoothing": 0.5,
+      "spin": 0,
+      "style": "bars",
+      "thickness": 0.58,
+      "tiltX": 0,
+      "tiltY": 0,
+      "w": 1,
+      "x": 0,
+      "y": 0.58
+    }
+  }
+}

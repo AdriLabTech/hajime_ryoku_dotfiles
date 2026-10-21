@@ -1,0 +1,2 @@
+# Plugins de Ryoku que instala el instalador desde git y deja activados como widget de escritorio.
+https://github.com/AdriLabTech/claude-companion

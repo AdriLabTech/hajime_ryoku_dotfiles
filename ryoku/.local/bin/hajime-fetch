@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""hajime-fetch: fastfetch con el logo ASCII de Arch girando.
+
+Compone el logo ASCII de fastfetch (no se distribuye ninguna imagen) a la izquierda
+y la ficha de ~/.config/fastfetch/config.jsonc a la derecha.
+
+  En kitty el logo gira SIEMPRE: `hajime-fetch build` dibuja los fotogramas (con tu
+  fuente, en ~/.local/share/hajime/spin) y kitty los anima en bucle sin ningun proceso,
+  asi que puedes escribir comandos debajo mientras sigue girando. Se genera solo la
+  primera vez.
+  En otros terminales gira una vuelta y se queda de frente.
+
+  hajime-fetch build     (re)genera los fotogramas para kitty (necesita python-pillow)
+  HAJIME_SPIN=0          sin animacion (solo el fotograma de frente)
+  HAJIME_SPIN_FRAMES=N   fotogramas de la vuelta corta (45 por defecto)
+  HAJIME_SPIN_MS=N       milisegundos por fotograma de la vuelta corta (22 por defecto)
+"""
+import base64, json, math, os, re, shutil, signal, subprocess, sys, time
+
+BLUE, RESET = "\x1b[38;2;23;147;209m", "\x1b[0m"
+FRAMES = int(os.environ.get("HAJIME_SPIN_FRAMES", 45))
+DELAY = int(os.environ.get("HAJIME_SPIN_MS", 22)) / 1000
+GAP, TOP = 2, 1                                   # columnas entre logo y ficha; filas sobre el logo
+ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+COLUMN = re.compile(r"\x1b\[(\d+)G")              # la ficha de Ryoku alinea con ESC[nG (columna absoluta)
+
+
+def fastfetch(*args):
+    return subprocess.run(["fastfetch", *args], check=True, capture_output=True, text=True).stdout.splitlines()
+
+
+def vis_width(line):
+    """Ancho visible de una linea de la ficha (cuenta el salto a columna absoluta ESC[nG)."""
+    m = COLUMN.search(line)
+    if not m:
+        return len(ANSI.sub("", line))
+    return int(m.group(1)) - 1 + len(ANSI.sub("", line[m.end():]))
+
+
+def read_logo():
+    rows = [l[:40].rstrip() for l in fastfetch("-c", "none", "-l", "arch", "--pipe", "true")[:19]]
+    w = max(len(r) for r in rows)
+    return [r.ljust(w) for r in rows]
+
+
+def read_info(shift):
+    cfg = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "fastfetch/config.jsonc")
+    args = ["--config", cfg] if os.path.isfile(cfg) else []
+    lines = fastfetch(*args, "--logo-type", "none", "--pipe", "false")
+    return [COLUMN.sub(lambda m: f"\x1b[{int(m.group(1)) + shift}G", l) for l in lines]
+
+
+def spin(rows, n):
+    """Logo girado n/FRAMES de vuelta: cada caracter conserva su forma y cambia de columna."""
+    th = 2 * math.pi * n / FRAMES
+    c, s = math.cos(th), math.sin(th)
+    w = len(rows[0])
+    cx = (w - 1) / 2
+    sx, edge = max(abs(c), 0.02), abs(c) < 0.16
+    out = []
+    for r in rows:
+        line, depth = [" "] * (w + 2), [-1e9] * (w + 2)
+        for x, ch in enumerate(r):
+            if ch == " ":
+                continue
+            t = int(round(cx + (x - cx) * sx)) + 1        # reverso sin espejar: se usa |cos|
+            z = (x - cx) * s * (1 if c >= 0 else -1)
+            if z > depth[t] or line[t] == " ":
+                depth[t], line[t] = z, "|" if edge else ch
+        out.append("".join(line))
+    return out
+
+
+def compose(logo_frame, info, height, pad):
+    rows = []
+    for i in range(height):
+        k = i - TOP
+        left = logo_frame[k] if 0 <= k < len(logo_frame) else ""
+        right = info[i] if i < len(info) else ""
+        rows.append(f"{BLUE}{left.ljust(pad)}{RESET}{' ' * GAP}{right}")
+    return rows
+
+
+# --- kitty: animacion infinita sin proceso ---------------------------------------------------------
+DATA = os.path.join(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")), "hajime/spin")
+KFRAMES, KGAP_MS, KID = 72, 40, 7100               # fotogramas por vuelta, ms por fotograma, id de imagen de kitty
+
+
+def in_kitty():
+    return bool(os.environ.get("KITTY_WINDOW_ID")) or os.environ.get("TERM") == "xterm-kitty"
+
+
+def apc(keys, payload=""):
+    return f"\x1b_G{keys};{payload}\x1b\\"
+
+
+def build():
+    """Dibuja el logo girando (texto -> PNG con transparencia) y escribe el flujo de kitty."""
+    from PIL import Image, ImageDraw, ImageFont
+    global FRAMES
+    FRAMES = KFRAMES                               # spin() usa FRAMES para el angulo
+    fc = subprocess.run(["fc-match", "-f", "%{file}", "monospace:bold"], capture_output=True, text=True).stdout
+    font = ImageFont.truetype(fc, 26)
+    cw = round(font.getlength("M"))                # celda de kitty ~ 1:2, igual que la del texto
+    logo = read_logo()
+    cols, rows = len(logo[0]) + 2, len(logo) + 1       # una fila de margen: el trazo de la ultima linea no se corta
+    shutil.rmtree(DATA, ignore_errors=True)
+    os.makedirs(DATA)
+    for n in range(KFRAMES):
+        im = Image.new("RGBA", (cols * cw, rows * 2 * cw), (0, 0, 0, 0))
+        d = ImageDraw.Draw(im)
+        for i, line in enumerate(spin(logo, n)):
+            for j, ch in enumerate(line):
+                if ch != " ":
+                    d.text((j * cw, i * 2 * cw + cw // 4), ch, font=font, fill=(23, 147, 209, 255))
+        im.save(f"{DATA}/{n:03d}.png")
+    enc = lambda n: base64.b64encode(f"{DATA}/{n:03d}.png".encode()).decode()
+    parts = ["\x1b[1G", apc(f"a=T,I={KID},t=f,f=100,c={cols},r={rows},C=1,q=2", enc(0)),
+             apc(f"a=a,I={KID},r=1,z={KGAP_MS},q=2")]
+    parts += [apc(f"a=f,I={KID},t=f,f=100,X=1,z={KGAP_MS},q=2", enc(n)) for n in range(1, KFRAMES)]
+    parts.append(apc(f"a=a,I={KID},s=3,v=1,q=2"))   # bucle infinito
+    open(f"{DATA}/spin.raw", "w").write("".join(parts))
+    open(f"{DATA}/blank.txt", "w").write("\n".join([" " * cols] * rows) + "\n")
+    json.dump({"cols": cols, "rows": rows}, open(f"{DATA}/meta.json", "w"))
+
+
+def run_kitty():
+    """Imprime la animacion y deja que fastfetch escriba la ficha al lado (el logo es un bloque en blanco)."""
+    if not os.path.exists(f"{DATA}/spin.raw"):
+        try:
+            build()
+        except Exception:
+            return False
+    meta = json.load(open(f"{DATA}/meta.json"))
+    sys.stdout.write(open(f"{DATA}/spin.raw").read())
+    sys.stdout.flush()
+    cfg = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "fastfetch/config.jsonc")
+    args = ["--config", cfg] if os.path.isfile(cfg) else []
+    subprocess.run(["fastfetch", *args, "--pipe", "false", "--file-raw", f"{DATA}/blank.txt",
+                    "--logo-width", str(meta["cols"]), "--logo-height", str(meta["rows"]),
+                    "--logo-padding-right", str(GAP), "--logo-padding-top", "0", "--logo-padding-left", "0"])
+    return True
+
+
+def finish_pending():
+    """Tras instalar sin sesion grafica: el primer terminal del escritorio pone el fondo y repinta (una vez)."""
+    flag = os.path.expanduser("~/.local/state/hajime/pending-rice")
+    if not (os.path.exists(flag) and os.environ.get("HYPRLAND_INSTANCE_SIGNATURE") and shutil.which("ryogami")):
+        return
+    wall = os.path.expanduser("~/.config/ryoku/rices/hajime/wall.png")
+    os.remove(flag)
+    subprocess.Popen(["sh", "-c", f'ryoku-hub rice apply hajime; ryogami wallpaper set "{wall}"; ryogami wallpaper repaint'],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+
+
+def main():
+    finish_pending()
+    if shutil.which("fastfetch") is None:
+        sys.exit("hajime-fetch: falta fastfetch")
+    if sys.argv[1:] == ["build"]:
+        build()
+        print(f"fotogramas en {DATA}")
+        return
+    # ventana estrecha (p. ej. media pantalla): sin logo, solo la ficha; con logo las lineas se parten
+    plain = read_info(0)
+    need = len(read_logo()[0]) + 2 + GAP + max((vis_width(l) for l in plain), default=0)
+    if shutil.get_terminal_size().columns < need:
+        sys.stdout.write("\n".join(plain) + "\n")
+        return
+    if (in_kitty() and sys.stdout.isatty() and os.environ.get("HAJIME_SPIN") != "0" and run_kitty()):
+        return
+    logo = read_logo()
+    pad = len(logo[0]) + 2
+    info = read_info(pad + GAP)
+    height = max(len(info), len(logo) + TOP)
+    cols, lines = shutil.get_terminal_size()
+    widest = max((vis_width(l) for l in info), default=0)
+    final = "\n".join(compose(spin(logo, 0), info, height, pad)) + "\n"
+    animate = (sys.stdout.isatty() and os.environ.get("HAJIME_SPIN") != "0" and FRAMES > 1
+               and lines > height + 1 and cols >= pad + GAP + widest)
+    if not animate:
+        sys.stdout.write(final)
+        return
+    out = sys.stdout
+    out.write("\x1b[?25l")
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+    try:
+        for n in range(FRAMES):
+            if n:
+                out.write(f"\x1b[{height}A")
+            out.write("\n".join(compose(spin(logo, n), info, height, pad)) + "\n")
+            out.flush()
+            time.sleep(DELAY)
+        out.write(f"\x1b[{height}A" + final)
+    finally:
+        out.write("\x1b[?25h")
+        out.flush()
+
+
+try:
+    main()
+except KeyboardInterrupt:
+    pass

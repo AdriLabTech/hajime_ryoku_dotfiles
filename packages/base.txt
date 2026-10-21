@@ -1,0 +1,10 @@
+# Lo que necesita la configuracion de Hajime (repositorio extra, sin AUR).
+fish
+kitty
+starship
+fastfetch
+python
+neovim
+git
+ripgrep
+fd
