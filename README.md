@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/hero.svg" alt="hajime_ryoku_dotfiles" width="100%"></p>
+
 # Hajime
 
 Dotfiles para **Ryoku Arch** y **Arch puro**: un escritorio oscuro y cálido, con terminal, iconos y barra propios.
